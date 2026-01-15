@@ -1,4 +1,6 @@
+"use client";
 import { DotWave } from "@/components/ui/dot-wave";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -26,9 +28,9 @@ export default function Home() {
           Maximize your H-1B chances
         </p>
         <div className="mt-8 pointer-events-auto">
-          <button className="relative px-8 py-3 rounded-full bg-white/5 border border-white/10 text-neutral-200 font-medium tracking-wide hover:bg-white/10 hover:text-white hover:border-white/20 hover:scale-105 transition-all duration-300 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_25px_rgba(255,255,255,0.1)] active:scale-95">
+          <Link href="/search" className="relative px-8 py-3 rounded-full bg-white/5 border border-white/10 text-neutral-200 font-medium tracking-wide hover:bg-white/10 hover:text-white hover:border-white/20 hover:scale-105 transition-all duration-300 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_25px_rgba(255,255,255,0.1)] active:scale-95">
             Get Started
-          </button>
+          </Link>
         </div>
       </div>
     </DotWave>
