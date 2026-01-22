@@ -29,20 +29,16 @@ import {
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import occupationsData from "@/data/occupations.json"
+import geographyData from "@/data/geography.json";
 
-const occupations = [
-  { value: "software-developer", label: "Software Developer" },
-  { value: "data-scientist", label: "Data Scientist" },
-  { value: "product-manager", label: "Product Manager" },
-  { value: "lawyer", label: "Lawyer" },
-]
+const occupations = occupationsData as { value: string; label: string; title: string; description: string }[]
+const geography = geographyData as Record<string, string[]>
 
-const states = [
-  { value: "ca", label: "California" },
-  { value: "ny", label: "New York" },
-  { value: "tx", label: "Texas" },
-  { value: "wa", label: "Washington" },
-]
+const states = Object.keys(geography).map(state => ({
+  value: state,
+  label: state
+})).sort((a,b) => a.label.localeCompare(b.label))
 
 const areas = [
   { value: "sf-bay", label: "San Francisco Bay Area" },
@@ -59,6 +55,14 @@ export function SearchForm({ className }: { className?: string }) {
   const [stateValue, setStateValue] = useState("")
   const [areaOpen, setAreaOpen] = useState(false)
   const [areaValue, setAreaValue] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredOccupations = occupations
+    .filter((occupation) =>
+      occupation.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      occupation.value.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .slice(0, 50)
 
   return (
     <Card className={cn("bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl", className)}>
@@ -85,24 +89,28 @@ export function SearchForm({ className }: { className?: string }) {
                         variant="outline"
                         role="combobox"
                         aria-expanded={occupationOpen}
-                        className="w-full justify-between h-11 text-sm bg-neutral-950/50 border-neutral-800 text-white hover:bg-neutral-900 hover:text-white"
+                        className="w-full justify-between h-11 text-sm bg-neutral-950/50 border-neutral-800 text-white hover:bg-neutral-900 hover:text-white truncate"
                       >
                         {occupationValue
-                          ? occupations.find((framework) => framework.value === occupationValue)?.label
+                          ? occupations.find((framework) => framework.label === occupationValue)?.label
                           : "Type search term here..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0 bg-neutral-900 border-neutral-800 text-white">
-                      <Command className="bg-neutral-900 text-white">
-                        <CommandInput placeholder="Search occupation..." className="text-white" />
+                    <PopoverContent className="w-[400px] p-0 bg-neutral-900 border-neutral-800 text-white">
+                      <Command shouldFilter={false} className="bg-neutral-900 text-white">
+                        <CommandInput 
+                          placeholder="Search occupation..." 
+                          className="text-white" 
+                          onValueChange={setSearchQuery}
+                        />
                         <CommandList>
                           <CommandEmpty>No occupation found.</CommandEmpty>
                           <CommandGroup>
-                            {occupations.map((occupation) => (
+                            {filteredOccupations.map((occupation) => (
                               <CommandItem
                                 key={occupation.value}
-                                value={occupation.value}
+                                value={occupation.label}
                                 onSelect={(currentValue) => {
                                   setOccupationValue(currentValue === occupationValue ? "" : currentValue)
                                   setOccupationOpen(false)
@@ -112,7 +120,7 @@ export function SearchForm({ className }: { className?: string }) {
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    occupationValue === occupation.value ? "opacity-100" : "opacity-0"
+                                    occupationValue === occupation.label ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 {occupation.label}
@@ -155,7 +163,9 @@ export function SearchForm({ className }: { className?: string }) {
                                 key={state.value}
                                 value={state.value}
                                 onSelect={(currentValue) => {
-                                  setStateValue(currentValue === stateValue ? "" : currentValue)
+                                  // cmdk lowercases values, so we find the original from our list
+                                  const originalState = states.find(s => s.value.toLowerCase() === currentValue.toLowerCase())
+                                  setStateValue(originalState?.value === stateValue ? "" : originalState?.value || "")
                                   setStateOpen(false)
                                 }}
                                  className="text-neutral-200 aria-selected:bg-neutral-800 aria-selected:text-white"
