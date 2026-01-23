@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import occupationsData from "@/data/occupations.json"
 import geographyData from "@/data/geography.json";
+import { getWageLevels } from "../app/actions";
 
 const occupations = occupationsData as { value: string; label: string; title: string; description: string }[]
 const geography = geographyData as Record<string, string[]>
@@ -40,12 +41,6 @@ const states = Object.keys(geography).map(state => ({
   label: state
 })).sort((a,b) => a.label.localeCompare(b.label))
 
-const areas = [
-  { value: "sf-bay", label: "San Francisco Bay Area" },
-  { value: "nyc-metro", label: "New York City Metro" },
-  { value: "austin", label: "Austin-Round Rock" },
-  { value: "seattle", label: "Seattle-Tacoma-Bellevue" },
-]
 
 export function SearchForm({ className }: { className?: string }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -56,6 +51,10 @@ export function SearchForm({ className }: { className?: string }) {
   const [areaOpen, setAreaOpen] = useState(false)
   const [areaValue, setAreaValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [stateSearchQuery, setStateSearchQuery] = useState("")
+  const [areaSearchQuery, setAreaSearchQuery] = useState("")
+  const [areas, setAreas] = useState([])
+  const [jobDescription, setJobDescription] = useState("")
 
   const filteredOccupations = occupations
     .filter((occupation) =>
@@ -63,6 +62,37 @@ export function SearchForm({ className }: { className?: string }) {
       occupation.value.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .slice(0, 50)
+
+  const filteredStates = states.filter((state) => 
+    state.label.toLowerCase().includes(stateSearchQuery.toLowerCase())
+  )
+
+  const filteredAreas = (stateValue && geography[stateValue] ? geography[stateValue] : [])
+    .filter((area) => 
+      area.toLowerCase().includes(areaSearchQuery.toLowerCase())
+    )
+
+  const handleClear = () => {
+    setOccupationValue("")
+    setStateValue("")
+    setAreaValue("")
+    setSearchQuery("")
+    setStateSearchQuery("")
+    setAreaSearchQuery("")
+    setAreaSearchQuery("")
+  }
+
+  const handleAnalyze = async () => {
+    console.log("Client: Clicking button...");
+    const result = await getWageLevels({
+      jobDescription: jobDescription,
+      occupation: occupationValue,
+      state: stateValue,
+      area: areaValue
+    });
+    console.log("Client: Server replied:", result);
+    alert(result.reply);
+  }
 
   return (
     <Card className={cn("bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl", className)}>
@@ -153,22 +183,25 @@ export function SearchForm({ className }: { className?: string }) {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[200px] p-0 bg-neutral-900 border-neutral-800 text-white">
-                      <Command className="bg-neutral-900 text-white">
-                        <CommandInput placeholder="Search state..." className="text-white" />
+                      <Command shouldFilter={false} className="bg-neutral-900 text-white">
+                        <CommandInput 
+                          placeholder="Search state..." 
+                          className="text-white" 
+                          onValueChange={setStateSearchQuery}
+                        />
                         <CommandList>
                           <CommandEmpty>No state found.</CommandEmpty>
                           <CommandGroup>
-                            {states.map((state) => (
+                            {filteredStates.map((state) => (
                               <CommandItem
                                 key={state.value}
                                 value={state.value}
                                 onSelect={(currentValue) => {
-                                  // cmdk lowercases values, so we find the original from our list
-                                  const originalState = states.find(s => s.value.toLowerCase() === currentValue.toLowerCase())
-                                  setStateValue(originalState?.value === stateValue ? "" : originalState?.value || "")
+                                  // Manual filtering means 'value' stays as original casing, no need to lowercase finding
+                                  setStateValue(currentValue === stateValue ? "" : currentValue)
                                   setStateOpen(false)
                                 }}
-                                 className="text-neutral-200 aria-selected:bg-neutral-800 aria-selected:text-white"
+                                 className="text-neutral-200 aria-selected:bg-neutral-800 aria-selected:text-white cursor-pointer"
                               >
                                 <Check
                                   className={cn(
@@ -200,37 +233,42 @@ export function SearchForm({ className }: { className?: string }) {
                         variant="outline"
                         role="combobox"
                         aria-expanded={areaOpen}
-                        className="w-full justify-between h-11 text-sm bg-neutral-950/50 border-neutral-800 text-white hover:bg-neutral-900 hover:text-white"
+                        disabled={!stateValue}
+                        className="w-full justify-between h-11 text-sm bg-neutral-950/50 border-neutral-800 text-white hover:bg-neutral-900 hover:text-white disabled:opacity-50"
                       >
                         {areaValue
-                          ? areas.find((framework) => framework.value === areaValue)?.label
-                          : "Select area..."}
+                          ? areaValue
+                          : stateValue ? "Select area..." : "Select state first"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0 bg-neutral-900 border-neutral-800 text-white">
-                      <Command className="bg-neutral-900 text-white">
-                        <CommandInput placeholder="Search area..." className="text-white" />
+                      <Command shouldFilter={false} className="bg-neutral-900 text-white">
+                        <CommandInput 
+                          placeholder="Search area..." 
+                          className="text-white" 
+                          onValueChange={setAreaSearchQuery}
+                        />
                         <CommandList>
                           <CommandEmpty>No area found.</CommandEmpty>
                           <CommandGroup>
-                            {areas.map((area) => (
+                            {filteredAreas.map((area, index) => (
                               <CommandItem
-                                key={area.value}
-                                value={area.value}
+                                key={index}
+                                value={area} // area is just a string "Sussex County", case logic handled by manual filter
                                 onSelect={(currentValue) => {
                                   setAreaValue(currentValue === areaValue ? "" : currentValue)
                                   setAreaOpen(false)
                                 }}
-                                 className="text-neutral-200 aria-selected:bg-neutral-800 aria-selected:text-white"
+                                className="text-neutral-200 aria-selected:bg-neutral-800 aria-selected:text-white cursor-pointer"
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    areaValue === area.value ? "opacity-100" : "opacity-0"
+                                    areaValue === area ? "opacity-100" : "opacity-0"
                                   )}
                                 />
-                                {area.label}
+                                {area}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -238,6 +276,7 @@ export function SearchForm({ className }: { className?: string }) {
                       </Command>
                     </PopoverContent>
                   </Popover>
+
                 </div>
               </div>
             </div>
@@ -249,6 +288,8 @@ export function SearchForm({ className }: { className?: string }) {
                  id="jd" 
                  placeholder="Paste the full job description here..." 
                  className="min-h-[200px] text-base bg-neutral-950/50 border-neutral-800 text-white placeholder:text-neutral-500 resize-none focus-visible:ring-offset-0" 
+                 value={jobDescription}
+                 onChange={(e) => setJobDescription(e.target.value)}
                />
             </div>
 
@@ -260,10 +301,14 @@ export function SearchForm({ className }: { className?: string }) {
           className="w-full bg-transparent border border-neutral-800 text-neutral-400 hover:text-white hover:bg-white/5 hover:border-neutral-700 text-base font-medium py-6 rounded-xl transition-all h-auto gap-2"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          onClick={(e) => {
+            e.preventDefault(); // prevent form submission refresh
+            handleAnalyze();
+          }}
         >
-          Analyze Eligibility <SparkleIcon size={18} isHovered forceHover={isHovered} className={`text-current transition-transform duration-300 ${isHovered ? "scale-125 text-yellow-400" : ""}`} />
+          Analyze Salary Requirements <SparkleIcon size={18} isHovered forceHover={isHovered} className={`text-current transition-transform duration-300 ${isHovered ? "scale-125 text-yellow-400" : ""}`} />
         </Button>
-        <Button variant="ghost" className="text-neutral-500 hover:text-neutral-300 hover:bg-transparent text-sm">
+        <Button variant="ghost" onClick={handleClear} className="text-neutral-500 hover:text-neutral-300 hover:bg-transparent text-sm">
           Clear form
         </Button>
       </CardFooter>
