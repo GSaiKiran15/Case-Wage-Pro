@@ -30,7 +30,7 @@ export async function queryPineCone(jobDescription: string) {
         fields: ['description', 'title', 'value'], 
     });
 
-    console.log("Pinecone Results:", JSON.stringify(results, null, 2));
+    // console.log("Pinecone Results:", JSON.stringify(results, null, 2));
 
     return {
         success: true,

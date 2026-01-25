@@ -33,6 +33,7 @@ import occupationsData from "@/data/occupations.json"
 import geographyData from "@/data/geography.json";
 import { getRecommendation } from "../app/actions";
 import TextGradient from "@/components/text-gradient";
+import { useRouter } from "next/navigation";
 
 const occupations = occupationsData as { value: string; label: string; title: string; description: string }[]
 const geography = geographyData as Record<string, string[]>
@@ -56,6 +57,7 @@ export function SearchForm({ className }: { className?: string }) {
   const [areaSearchQuery, setAreaSearchQuery] = useState("")
   const [jobDescription, setJobDescription] = useState("")
   const [loading, setLoading] = useState(false)
+  const router = useRouter() 
 
   const filteredOccupations = occupations
     .filter((occupation) =>
@@ -84,7 +86,6 @@ export function SearchForm({ className }: { className?: string }) {
   }
 
   const handleAnalyze = async () => {
-    console.log("Client: Clicking button...");
     setLoading(true);
     try {
       const result = await getRecommendation({
@@ -93,7 +94,9 @@ export function SearchForm({ className }: { className?: string }) {
         state: stateValue,
         area: areaValue
       });
-      console.log("Client: Server replied:", result);
+      // console.log("Client: Server replied:", result);
+      localStorage.setItem('analysisResults', JSON.stringify(result))
+      router.push('/results')
     } catch (error) {
       console.error("Error:", error);
     } finally {
