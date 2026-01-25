@@ -31,7 +31,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import occupationsData from "@/data/occupations.json"
 import geographyData from "@/data/geography.json";
-import { getWageLevels } from "../app/actions";
+import { getRecommendation } from "../app/actions";
+import TextGradient from "@/components/text-gradient";
 
 const occupations = occupationsData as { value: string; label: string; title: string; description: string }[]
 const geography = geographyData as Record<string, string[]>
@@ -53,8 +54,8 @@ export function SearchForm({ className }: { className?: string }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [stateSearchQuery, setStateSearchQuery] = useState("")
   const [areaSearchQuery, setAreaSearchQuery] = useState("")
-  const [areas, setAreas] = useState([])
   const [jobDescription, setJobDescription] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const filteredOccupations = occupations
     .filter((occupation) =>
@@ -84,14 +85,39 @@ export function SearchForm({ className }: { className?: string }) {
 
   const handleAnalyze = async () => {
     console.log("Client: Clicking button...");
-    const result = await getWageLevels({
-      jobDescription: jobDescription,
-      occupation: occupationValue,
-      state: stateValue,
-      area: areaValue
-    });
-    console.log("Client: Server replied:", result);
-    alert(result.reply);
+    setLoading(true);
+    try {
+      const result = await getRecommendation({
+        jobDescription: jobDescription,
+        occupation: occupationValue,
+        state: stateValue,
+        area: areaValue
+      });
+      console.log("Client: Server replied:", result);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Loading State Card
+  if (loading) {
+    return (
+      <Card className={cn("bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl h-[500px] w-full flex items-center justify-center", className)}>
+        <div className="flex flex-col items-center gap-6">
+          <TextGradient 
+            className="text-6xl font-black px-80 py-10" 
+            highlightColor="#ffffff"
+            baseColor="#63eaf1ff"
+            duration={3.0}
+            spread={75}
+          >
+            Thinking...
+          </TextGradient>
+        </div>
+      </Card>
+    );
   }
 
   return (
