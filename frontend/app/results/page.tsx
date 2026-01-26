@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { DotWave } from "@/components/ui/dot-wave";
 import { Card } from "@/components/ui/card";
 import TextGradient from "@/components/text-gradient";
+import { Meteors } from "@/components/ui/meteors";
 
 type JobResult = {
   _id: string;
@@ -27,6 +28,18 @@ type AnalysisResult = {
 export default function ResultsPage() {
     const [results, setResults] = useState<AnalysisResult | null>(null);
     const [jobs, setJobs] = useState<JobResult[]>([]);
+    const [popUp, setPopUp] = useState(false);
+    const [selectedJob, setSelectedJob] = useState<JobResult | null>(null);
+
+    const handleJobClick = (job: JobResult) => {
+        setSelectedJob(job);
+        setPopUp(true);
+    };
+
+    const handleClosePopup = () => {
+        setPopUp(false);
+        setSelectedJob(null);
+    };
 
     useEffect(() => {
         const stored = localStorage.getItem('analysisResults');
@@ -82,7 +95,12 @@ export default function ResultsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {jobs.map((job, index) => (
-                        <JobCard key={job._id} job={job} index={index} />
+                        <JobCard 
+                            key={job._id} 
+                            job={job} 
+                            index={index} 
+                            onClick={() => handleJobClick(job)}
+                        />
                     ))}
                 </div>
 
@@ -93,18 +111,27 @@ export default function ResultsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Popup Modal */}
+            {popUp && selectedJob && (
+                <PopUpCard 
+                    job={selectedJob} 
+                    onClose={handleClosePopup}
+                />
+            )}
         </DotWave>
     );
 }
 
-function JobCard({ job, index }: { job: JobResult; index: number }) {
+function JobCard({ job, index, onClick }: { job: JobResult; index: number; onClick: () => void }) {
     const [isHovered, setIsHovered] = useState(false);
 
     return (
         <Card 
-            className="relative bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl p-6 hover:border-neutral-700 transition-all duration-300 overflow-hidden group"
+            className="relative bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl p-6 hover:border-neutral-700 transition-all duration-300 overflow-hidden group cursor-pointer"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onClick={onClick}
             style={{
                 animationDelay: `${index * 100}ms`,
                 animation: 'fadeInUp 0.5s ease-out forwards',
@@ -120,6 +147,9 @@ function JobCard({ job, index }: { job: JobResult; index: number }) {
                     transform: isHovered ? 'translateX(0)' : 'translateX(100%)'
                 }}
             />
+
+            {/* Animated meteors */}
+            <Meteors number={5} />
 
             <div className="relative z-10">
                 <div className="flex items-start justify-between mb-3">
@@ -157,5 +187,114 @@ function JobCard({ job, index }: { job: JobResult; index: number }) {
                 }
             `}</style>
         </Card>
+    );
+}
+
+function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
+    const [isRemote, setIsRemote] = useState<boolean>(false);
+    const [salary, setSalary] = useState<number>(0);
+
+    const handleSubmit = () => {
+        
+        console.log('Submitted:', { job: job.fields.title, isRemote, salary });
+        onClose();
+    };
+
+    return (
+        <>
+            {/* Dark overlay */}
+            <div 
+                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+                onClick={onClose}
+            />
+            
+            {/* Modal Card */}
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                <Card 
+                    className="relative bg-neutral-900/90 backdrop-blur-xl border-neutral-700 shadow-2xl p-8 max-w-md w-full overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Gradient accent line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500" />
+                    
+                    {/* Close button */}
+                    <button 
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors text-2xl"
+                    >
+                        ×
+                    </button>
+
+                    {/* Job Title */}
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-white mb-1">
+                            {job.fields.title}
+                        </h2>
+                        <p className="text-sm text-neutral-500 font-mono">
+                            Code: {job.fields.value}
+                        </p>
+                    </div>
+
+                    {/* Remote Question */}
+                    <div className="mb-6">
+                        <label className="block text-neutral-300 font-medium mb-3">
+                            Is this position remote?
+                        </label>
+                        <div className="flex gap-6">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input 
+                                    type="radio" 
+                                    name="remote"
+                                    checked={isRemote === true}
+                                    onChange={() => setIsRemote(true)}
+                                    className="w-4 h-4 accent-cyan-400"
+                                />
+                                <span className="text-neutral-400 group-hover:text-white transition-colors">Yes</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input 
+                                    type="radio" 
+                                    name="remote"
+                                    checked={isRemote === false}
+                                    onChange={() => setIsRemote(false)}
+                                    className="w-4 h-4 accent-cyan-400"
+                                />
+                                <span className="text-neutral-400 group-hover:text-white transition-colors">No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Salary Input */}
+                    <div className="mb-8">
+                        <label className="block text-neutral-300 font-medium mb-3">
+                            Annual Salary ($)
+                        </label>
+                        <input 
+                            type="number"
+                            value={salary || ''}
+                            onChange={(e) => setSalary(Number(e.target.value))}
+                            placeholder="Enter your salary"
+                            className="w-full bg-neutral-800/50 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                        />
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 px-4 py-3 rounded-lg border border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </Card>
+            </div>
+        </>
     );
 }
