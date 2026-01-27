@@ -4,6 +4,8 @@ import { DotWave } from "@/components/ui/dot-wave";
 import { Card } from "@/components/ui/card";
 import TextGradient from "@/components/text-gradient";
 import { Meteors } from "@/components/ui/meteors";
+import { useJob } from "@/contexts/JobContext";
+import levelsData from "@/data/levels.json";
 
 type JobResult = {
   _id: string;
@@ -193,8 +195,26 @@ function JobCard({ job, index, onClick }: { job: JobResult; index: number; onCli
 function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
     const [isRemote, setIsRemote] = useState<boolean>(false);
     const [salary, setSalary] = useState<number>(0);
+    const { jobData } = useJob();  // Get data from context
 
     const handleSubmit = () => {
+        // Get wage data for this occupation
+        const { occupation, area } = jobData;
+        
+        // Find wage info from levelsData
+        const jobInfo = (levelsData as Record<string, any[]>)[occupation];
+        const areaData = jobInfo?.find(item => item.area === area);
+        console.log(`"""""""""""""${jobInfo}, ${occupation}"""""""""""""""`)
+        if (areaData) {
+            console.log('Wage data found:', {
+                occupation: areaData.name,
+                area: areaData.area,
+                medianWage: areaData.pay[2],
+                highWage: areaData.pay[4]
+            });
+        } else {
+            console.log('No wage data found for this occupation/area');
+        }
         
         console.log('Submitted:', { job: job.fields.title, isRemote, salary });
         onClose();
