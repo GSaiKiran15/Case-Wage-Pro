@@ -6,6 +6,8 @@ type JobData = {
     state: string;
     area: string;
     jobDescription: string;
+    jobCode: string
+    areaCode: string
 }
 
 type JobContextType = {
@@ -20,7 +22,9 @@ export function JobProvider({children}:{children: ReactNode}) {
         occupation: '',
         state: '',
         area: '',
-        jobDescription: ''
+        jobDescription: '',
+        jobCode: '',
+        areaCode: ''
     })
 
     return(

@@ -49,6 +49,7 @@ export function SearchForm({ className }: { className?: string }) {
   const [isHovered, setIsHovered] = useState(false);
   const [occupationOpen, setOccupationOpen] = useState(false)
   const [occupationValue, setOccupationValue] = useState("")
+  const [occupationCode, setOccupationCode] = useState("")
   const [stateOpen, setStateOpen] = useState(false)
   const [stateValue, setStateValue] = useState("")
   const [areaOpen, setAreaOpen] = useState(false)
@@ -85,6 +86,7 @@ export function SearchForm({ className }: { className?: string }) {
     setStateSearchQuery("")
     setAreaSearchQuery("")
     setAreaSearchQuery("")
+    setOccupationCode("")
   }
 
   const handleAnalyze = async () => {
@@ -100,7 +102,8 @@ export function SearchForm({ className }: { className?: string }) {
         occupation: occupationValue,
         state: stateValue,
         area: areaValue,
-        jobDescription: jobDescription
+        jobDescription: jobDescription,
+        jobCode: occupationCode
       })
       // console.log("Client: Server replied:", result);
       localStorage.setItem('analysisResults', JSON.stringify(result))
@@ -180,6 +183,8 @@ export function SearchForm({ className }: { className?: string }) {
                                 value={occupation.label}
                                 onSelect={(currentValue) => {
                                   setOccupationValue(currentValue === occupationValue ? "" : currentValue)
+                                  const selectedOcc = occupations.find(occ => occ.label === currentValue)
+                                  setOccupationCode(selectedOcc ? selectedOcc.value : "")
                                   setOccupationOpen(false)
                                 }}
                                 className="text-neutral-200 aria-selected:bg-neutral-800 aria-selected:text-white"

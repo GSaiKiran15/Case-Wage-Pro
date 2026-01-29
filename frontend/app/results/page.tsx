@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DotWave } from "@/components/ui/dot-wave";
 import { Card } from "@/components/ui/card";
 import TextGradient from "@/components/text-gradient";
@@ -28,6 +29,8 @@ type AnalysisResult = {
 }
 
 export default function ResultsPage() {
+    const router = useRouter();
+    const {jobData, setJobData} = useJob()
     const [results, setResults] = useState<AnalysisResult | null>(null);
     const [jobs, setJobs] = useState<JobResult[]>([]);
     const [popUp, setPopUp] = useState(false);
@@ -42,6 +45,14 @@ export default function ResultsPage() {
         setPopUp(false);
         setSelectedJob(null);
     };
+
+    // Redirect to /search if no jobData
+    useEffect(() => {
+        if (!jobData.occupation || !jobData.area) {
+            console.warn('No jobData found, redirecting to /search');
+            router.push('/search');
+        }
+    }, [jobData, router]);
 
     useEffect(() => {
         const stored = localStorage.getItem('analysisResults');
@@ -193,31 +204,34 @@ function JobCard({ job, index, onClick }: { job: JobResult; index: number; onCli
 }
 
 function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
+    const router = useRouter();
     const [isRemote, setIsRemote] = useState<boolean>(false);
     const [salary, setSalary] = useState<number>(0);
-    const { jobData } = useJob();  // Get data from context
+    const { jobData, setJobData } = useJob();  // Get data and setter from context
 
     const handleSubmit = () => {
-        // Get wage data for this occupation
-        const { occupation, area } = jobData;
+        console.log('🚀 handleSubmit called!');
+        console.log('jobData:', jobData);
+        console.log('Selected job:', job.fields);
+        console.log('📤 Submission data:', { 
+            job: job.fields.title, 
+            socCode: job.fields.value,
+            isRemote, 
+            salary,
+        });
         
-        // Find wage info from levelsData
-        const jobInfo = (levelsData as Record<string, any[]>)[occupation];
-        const areaData = jobInfo?.find(item => item.area === area);
-        console.log(`"""""""""""""${jobInfo}, ${occupation}"""""""""""""""`)
-        if (areaData) {
-            console.log('Wage data found:', {
-                occupation: areaData.name,
-                area: areaData.area,
-                medianWage: areaData.pay[2],
-                highWage: areaData.pay[4]
-            });
-        } else {
-            console.log('No wage data found for this occupation/area');
-        }
+        // Update jobData with the selected job's SOC code
+        setJobData({
+            ...jobData,
+            jobCode: job.fields.value,  // Store SOC code for job-descriptor page
+            occupation: job.fields.title
+        });
         
-        console.log('Submitted:', { job: job.fields.title, isRemote, salary });
+        // Close modal first
         onClose();
+        
+        // Navigate to job descriptor page
+        router.push('/job-descriptor');
     };
 
     return (
