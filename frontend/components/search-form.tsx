@@ -35,6 +35,7 @@ import { getRecommendation } from "../app/actions";
 import TextGradient from "@/components/text-gradient";
 import { useRouter } from "next/navigation";
 import {useJob} from "@/contexts/JobContext"
+import wageData from "@/data/county_to_area_code.json"
 
 const occupations = occupationsData as { value: string; label: string; title: string; description: string }[]
 const geography = geographyData as Record<string, string[]>
@@ -54,13 +55,14 @@ export function SearchForm({ className }: { className?: string }) {
   const [stateValue, setStateValue] = useState("")
   const [areaOpen, setAreaOpen] = useState(false)
   const [areaValue, setAreaValue] = useState("")
+  const [areaCode, setAreaCode] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [stateSearchQuery, setStateSearchQuery] = useState("")
   const [areaSearchQuery, setAreaSearchQuery] = useState("")
   const [jobDescription, setJobDescription] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter() 
-  const { setJobData } = useJob()
+  const { jobData, setJobData } = useJob()
 
   const filteredOccupations = occupations
     .filter((occupation) =>
@@ -91,6 +93,16 @@ export function SearchForm({ className }: { className?: string }) {
 
   const handleAnalyze = async () => {
     setLoading(true);
+     const mappingKey = `${areaValue}, ${stateValue}`;
+  const foundMapping = (wageData as Record<string, any>)[mappingKey];
+  
+  if (foundMapping && foundMapping.areaCode) {
+    setAreaCode(foundMapping.areaCode);
+    console.log(foundMapping.areaCode)
+  } else {
+    console.warn(`No area code found for: ${mappingKey}`);
+    setAreaCode("");
+  }
     try {
       const result = await getRecommendation({
         jobDescription: jobDescription,
@@ -103,10 +115,12 @@ export function SearchForm({ className }: { className?: string }) {
         state: stateValue,
         area: areaValue,
         jobDescription: jobDescription,
-        jobCode: occupationCode
+        jobCode: occupationCode,
+        areaCode: areaCode
       })
       // console.log("Client: Server replied:", result);
       localStorage.setItem('analysisResults', JSON.stringify(result))
+      console.log(jobData)
       router.push('/results')
     } catch (error) {
       console.error("Error:", error);

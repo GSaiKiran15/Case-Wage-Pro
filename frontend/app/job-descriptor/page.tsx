@@ -10,7 +10,7 @@ import { DotWave } from "@/components/ui/dot-wave";
 export default function JobDescriptorPage() {
     const router = useRouter();
     const { jobData } = useJob();
-    const { occupation, state, area, jobDescription, jobCode } = jobData;
+    const { occupation, state, area, jobDescription, jobCode, areaCode } = jobData;
     
     // Redirect if no job data
     useEffect(() => {
@@ -33,7 +33,7 @@ export default function JobDescriptorPage() {
     }
     
     const areas = jobInfo.areas;
-    const areaData = areas?.find(areaObj => areaObj.area === area);
+    const areaData = areas?.find(areaObj => areaObj.areaCode === areaCode);
     
     if (!areaData) {
         return (
