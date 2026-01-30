@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 todo*
 data/
+frontend/data/wage_data.json
