@@ -1,54 +1,82 @@
 'use client'
 
-import { useEffect } from "react";
+import {useState,  useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useJob } from "@/contexts/JobContext";
-import levelsData from "@/data/wage_data.json";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DotWave } from "@/components/ui/dot-wave";
 
 export default function JobDescriptorPage() {
+    const [wageInfo, setWageInfo] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const router = useRouter();
     const { jobData } = useJob();
-    const { occupation, state, area, jobDescription, jobCode, areaCode } = jobData;
-    
-    // Redirect if no job data
+    const {jobCode, area, state} = jobData    
     useEffect(() => {
-        if (!jobCode || !area) {
-            console.warn('No job data found, redirecting to /search');
-            router.push('/search');
+        async function fetchWageData() {
+            setLoading(true)
+
+            try{
+                const response = await fetch(
+                      `/api/best-areas?jobCode=${jobCode}&countyValue=${area}&stateValue=${state}`
+                )
+                const data = await response.json()
+                if (data.success) {
+                    setWageInfo(data)
+                    setLoading(false)
+                    console.log(data.stateAreas, data.usaAreas);
+                }
+                else{
+                    setError(data.error)
+                }
+            }
+            catch (err) {
+                setError(err instanceof Error ? err.message : 'An error occurred')
+            } finally{
+                setLoading(false)}
         }
-    }, [jobCode, area, router]);
 
-    // Type assertion to match wage_data.json structure
-    const jobInfo = (levelsData as Record<string, { title: string; description: string; areas: any[] }>)[jobCode];
+        if (jobCode && area && state) {
+            fetchWageData()
+        }
+    }, [jobCode, area, state])
     
-    // Check if jobInfo exists
-    if (!jobInfo) {
+    // Show loading state
+    if (loading) {
         return (
             <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-                <p className="text-neutral-400">Job data not found. Redirecting...</p>
+                <p className="text-neutral-400">Loading wage data...</p>
             </div>
-        );
-    }
-    
-    const areas = jobInfo.areas;
-    const areaData = areas?.find(areaObj => areaObj.areaCode === areaCode);
-    
-    if (!areaData) {
-        return (
-            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-                <p className="text-neutral-400">Area data not found for {area}. Redirecting...</p>
-            </div>
-        );
+        )
     }
 
+    // Show error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+                <p className="text-red-400">Error: {error}</p>
+            </div>
+        )
+    }
+
+    // Check if data exists
+    if (!wageInfo) {
+        return (
+            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+                <p className="text-neutral-400">No wage data found</p>
+            </div>
+        )
+    }
+
+    // Now it's safe to access the data
+    const jobInfo = wageInfo.jobInfo;
     const wageData = [
-        { level: "Level 1 (Entry)", wage: areaData.level1, description: "Entry-level positions" },
-        { level: "Level 2 (Intermediate)", wage: areaData.level2, description: "Some experience required" },
-        { level: "Level 3 (Median)", wage: areaData.level3, description: "Median wage", highlight: true },
-        { level: "Level 4 (Experienced)", wage: areaData.level4, description: "Highly experienced" },
-        { level: "Average", wage: areaData.average, description: "Mean wage across all levels", highlight: true },
+        { level: "Level 1", wage: jobInfo.level1, description: "Entry-level positions" },
+        { level: "Level 2", wage: jobInfo.level2, description: "Some experience required" },
+        { level: "Level 3", wage: jobInfo.level3, description: "Median wage", highlight: true },
+        { level: "Level 4", wage: jobInfo.level4, description: "Highly experienced" },
+        { level: "Average", wage: jobInfo.average, description: "Mean wage across all levels", highlight: true },
     ];
 
     return (
@@ -169,4 +197,4 @@ export default function JobDescriptorPage() {
             </div>
         </DotWave>
     );
-}
+} 
