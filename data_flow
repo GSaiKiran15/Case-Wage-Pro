@@ -1,0 +1,96 @@
+# Data Flow Documentation: Case Wage Pro
+
+This document outlines the flow of data through the application, from the initial search to the detailed job descriptor analysis.
+
+## Core Data Structure: `JobData`
+Centered around the `JobContext`, this object persists in memory across the session.
+
+```typescript
+type JobData = {
+    occupation: string;      // User input or selected job title
+    state: string;           // Selected state
+    area: string;            // Selected area (county/township)
+    jobDescription: string;  // Raw user input
+    jobCode: string;         // SOC Code (determined by search or selection)
+    areaCode: string;        // Derived from area/state mapping
+}
+```
+
+## Flow Diagram
+
+```mermaid
+graph TD
+    subgraph SearchPage ["Search Page (/search)"]
+        UserInputs[User Inputs: Occupation, Location, JD]
+        CalcArea[Calculate Area Code]
+        GetRecs[Action: getRecommendation]
+        UpdateContext1[Context: Update JobData]
+        SaveLocal[LocalStorage: Save analysisResults]
+    end
+
+    subgraph ResultsPage ["Results Page (/results)"]
+        LoadLocal[Load analysisResults from LocalStorage]
+        DisplayJobs[Display Recommended Jobs]
+        UserSelect[User Selects Job]
+        PopupInput[Popup: Remote & Salary Inputs]
+        UpdateContext2[Context: Update JobData (Code & Title)]
+    end
+
+    subgraph JobDescPage ["Job Descriptor Page (/job-descriptor)"]
+        ReadContext[Read JobData Context]
+        FetchWage[Fetch: /api/best-areas]
+        Analyze[Action: queryGeminiJD]
+        DisplayFinal[Display: Wage Data & Analysis]
+    end
+
+    UserInputs --> CalcArea
+    CalcArea --> UpdateContext1
+    UserInputs --> GetRecs
+    GetRecs --> SaveLocal
+    SaveLocal -->|"(JSON String)"| LoadLocal
+    LoadLocal --> DisplayJobs
+    DisplayJobs --> UserSelect
+    UserSelect --> PopupInput
+    PopupInput --> UpdateContext2
+    UpdateContext1 -.->|"(Initial Data)"| ResultsPage
+    UpdateContext2 -.->|"(Refined Data)"| JobDescPage
+    ReadContext --> FetchWage
+    ReadContext --> Analyze
+```
+
+## Detailed Stage Breakdown
+
+### 1. Search Page (`/search`)
+*   **Inputs**:
+    *   Occupation (Combobox)
+    *   State (Combobox)
+    *   Area (Combobox)
+    *   Job Description (Textarea)
+*   **Process**:
+    *   `areaCode` is looked up from `wageData` based on `${areaValue}, ${stateValue}`.
+    *   `getRecommendation` server action is called with inputs.
+*   **Outputs**:
+    *   **Context Update**: Sets initial `jobData` (occupation, state, area, jd, jobCode, areaCode).
+    *   **Storage**: Saves the result of `getRecommendation` to `localStorage` key `'analysisResults'`.
+    *   **Navigation**: Pushes to `/results`.
+
+### 2. Results Page (`/results`)
+*   **Inputs**:
+    *   `jobData` from Context (Redirects to `/search` if missing).
+    *   `analysisResults` from `localStorage`.
+*   **Interaction**:
+    *   User views list of recommended jobs.
+    *   User clicks a job -> Popup opens -> User enters Remote status and Salary.
+*   **Outputs (on selection)**:
+    *   **Context Update**: Updates `jobData.jobCode` and `jobData.occupation` with the *specific* job selected from the list.
+    *   **Navigation**: Pushes to `/job-descriptor`.
+
+### 3. Job Descriptor Page (`/job-descriptor`)
+*   **Inputs**:
+    *   `jobData` keys: `jobCode`, `area`, `state`, `occupation`, `jobDescription`.
+*   **Process (Parallel)**:
+    *   **Wage Data**: Fetches `/api/best-areas` using `jobCode`, `area`, `state`.
+    *   **Analysis**: Calls `handleAnalyze` (using `queryGeminiJD`) if `jobDescription` exists.
+*   **Outputs**:
+    *   Displays Prevailing Wage levels.
+    *   Displays AI-generated Job Analysis (Risk, Level, etc.).
