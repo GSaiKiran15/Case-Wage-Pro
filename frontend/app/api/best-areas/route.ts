@@ -16,17 +16,23 @@ export async function GET(request: NextRequest) {
         }, { status: 400 })
     }
 
+    const comparisonState = request.nextUrl.searchParams.get('comparisonState')
+
     const areaCode = (GeoInfo as Record<string, any>)[`${countyName}, ${stateName}`].areaCode;
     const jobs = (WageData as Record<string, any>)[jobCode].areas
     const jobInfo = jobs.find((job:any) => job.areaCode === areaCode)
     const allAreas = (WageData as Record<string, any>)[jobCode].areas;
-     const stateAreas = allAreas
-    .filter((a: any) => a.state === stateName)
-    .sort((a: any, b: any) => parseFloat(a.level1) - parseFloat(b.level1))
+    
+    // Use comparisonState if provided, otherwise default to stateName
+    const filterState = comparisonState || stateName;
+
+    const stateAreas = allAreas
+    .filter((a: any) => a.state === filterState)
+    .sort((a: any, b: any) => parseFloat(a.level3) - parseFloat(b.level3))
     .slice(0, 5);
   
   const usaAreas = [...allAreas]
-    .sort((a: any, b: any) => parseFloat(a.level1) - parseFloat(b.level1))
+    .sort((a: any, b: any) => parseFloat(a.level3) - parseFloat(b.level3))
     .slice(0, 10);
     
     return NextResponse.json({

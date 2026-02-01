@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useJob } from "@/contexts/JobContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DotWave } from "@/components/ui/dot-wave";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Geography from '@/data/geography.json';
+
+const US_STATES = Object.keys(Geography).sort();
 
 export default function JobDescriptorPage() {
     const [wageInfo, setWageInfo] = useState<any>(null)
@@ -13,13 +17,21 @@ export default function JobDescriptorPage() {
     const router = useRouter();
     const { jobData } = useJob();
     const {jobCode, area, state} = jobData    
+    const [selectedState, setSelectedState] = useState<string>('');
+
+    // Initialize selectedState when jobData.state is available
+    useEffect(() => {
+        if (state) {
+            setSelectedState(state);
+        }
+    }, [state]);
     useEffect(() => {
         async function fetchWageData() {
             setLoading(true)
 
             try{
                 const response = await fetch(
-                      `/api/best-areas?jobCode=${jobCode}&countyValue=${area}&stateValue=${state}`
+                      `/api/best-areas?jobCode=${jobCode}&countyValue=${area}&stateValue=${state}&comparisonState=${selectedState}`
                 )
                 const data = await response.json()
                 if (data.success) {
@@ -40,7 +52,7 @@ export default function JobDescriptorPage() {
         if (jobCode && area && state) {
             fetchWageData()
         }
-    }, [jobCode, area, state])
+    }, [jobCode, area, state, selectedState])
     
     // Show loading state
     if (loading) {
@@ -74,9 +86,9 @@ export default function JobDescriptorPage() {
     const wageData = [
         { level: "Level 1", wage: jobInfo.level1, description: "Entry-level positions" },
         { level: "Level 2", wage: jobInfo.level2, description: "Some experience required" },
-        { level: "Level 3", wage: jobInfo.level3, description: "Median wage", highlight: true },
+        { level: "Level 3", wage: jobInfo.level3, description: "Median wage" },
         { level: "Level 4", wage: jobInfo.level4, description: "Highly experienced" },
-        { level: "Average", wage: jobInfo.average, description: "Mean wage across all levels", highlight: true },
+        { level: "Average", wage: jobInfo.average, description: "Mean wage across all levels" },
     ];
 
     return (
@@ -150,14 +162,10 @@ export default function JobDescriptorPage() {
                                     {wageData.map((item, index) => (
                                         <tr 
                                             key={index}
-                                            className={`border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30 ${
-                                                item.highlight ? 'bg-cyan-950/10' : ''
-                                            }`}
+                                            className="border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30"
                                         >
                                             <td className="px-6 py-4">
-                                                <span className={`font-medium ${
-                                                    item.highlight ? 'text-cyan-400' : 'text-white'
-                                                }`}>
+                                                <span className="font-medium text-white">
                                                     {item.level}
                                                 </span>
                                             </td>
@@ -165,9 +173,7 @@ export default function JobDescriptorPage() {
                                                 {item.description}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <span className={`text-lg font-semibold ${
-                                                    item.highlight ? 'text-cyan-400' : 'text-white'
-                                                }`}>
+                                                <span className="text-lg font-semibold text-white">
                                                     ${parseFloat(item.wage).toFixed(2)}
                                                 </span>
                                             </td>
@@ -184,6 +190,107 @@ export default function JobDescriptorPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* State Areas Comparison */}
+                {wageInfo.stateAreas && wageInfo.stateAreas.length > 0 && (
+                    <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl overflow-hidden">
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-semibold text-white flex items-center justify-between gap-4">
+                                <span>Top Areas in {selectedState || state}</span>
+                                <div className="z-50 w-[200px]">
+                                    <Select 
+                                        value={selectedState} 
+                                        onValueChange={(value) => setSelectedState(value)}
+                                    >
+                                        <SelectTrigger className="bg-neutral-800/50 border-neutral-700 text-neutral-200">
+                                            <SelectValue placeholder="Select state" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200 h-[300px]">
+                                            {US_STATES.map((s) => (
+                                                <SelectItem key={s} value={s} className="hover:bg-neutral-800 focus:bg-neutral-800 cursor-pointer">
+                                                    {s}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardTitle>
+                            <CardDescription className="text-neutral-400">
+                                Areas with lowest prevailing wages in {selectedState || state} (Cost Saving)
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-neutral-800 bg-neutral-950/50">
+                                            <th className="text-left px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Area</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 1</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 2</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 3</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 4</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Mean</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {wageInfo.stateAreas.map((area: any, index: number) => (
+                                            <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800/30 transition-colors">
+                                                <td className="px-6 py-4 text-white font-medium">{area.areaName}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level1).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level2).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level3).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level4).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-400">${parseFloat(area.average).toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* USA Areas Comparison */}
+                {wageInfo.usaAreas && wageInfo.usaAreas.length > 0 && (
+                    <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl overflow-hidden">
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-semibold text-white">
+                                Top Areas in USA
+                            </CardTitle>
+                            <CardDescription className="text-neutral-400">
+                                Nationwide areas with lowest prevailing wages (Cost Saving)
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-neutral-800 bg-neutral-950/50">
+                                            <th className="text-left px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Area</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 1</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 2</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 3</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 4</th>
+                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Mean</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {wageInfo.usaAreas.map((area: any, index: number) => (
+                                            <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800/30 transition-colors">
+                                                <td className="px-6 py-4 text-white font-medium">{area.areaName}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level1).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level2).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level3).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level4).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-right text-neutral-400">${parseFloat(area.average).toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Back Button */}
                 <div className="flex justify-center pt-4">
