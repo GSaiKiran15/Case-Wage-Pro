@@ -1,11 +1,13 @@
 'use client'
 
-import {useState,  useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useJob } from "@/contexts/JobContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DotWave } from "@/components/ui/dot-wave";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { queryGeminiJD } from "./action";
 import Geography from '@/data/geography.json';
 
 const US_STATES = Object.keys(Geography).sort();
@@ -18,6 +20,34 @@ export default function JobDescriptorPage() {
     const { jobData } = useJob();
     const {jobCode, area, state} = jobData    
     const [selectedState, setSelectedState] = useState<string>('');
+    const [analysisResult, setAnalysisResult] = useState<string>('');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleAnalyze = useCallback(async () => {
+        setIsAnalyzing(true);
+        try {
+            const result = await queryGeminiJD(
+                jobData.jobDescription || "No description provided",
+                "unknown", 
+                `${area}, ${state}`,
+                jobData.occupation
+            );
+            if (result.success) {
+                console.log(result);
+                setAnalysisResult(result.filteredResults || '');
+            }
+        } catch (error) {
+            console.error("Analysis failed:", error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [jobData, area, state]);
+
+    useEffect(() => {
+        if (jobData?.jobDescription && !analysisResult) {
+            handleAnalyze();
+        }
+    }, [handleAnalyze, jobData?.jobDescription, analysisResult]);
 
     // Initialize selectedState when jobData.state is available
     useEffect(() => {
@@ -54,7 +84,6 @@ export default function JobDescriptorPage() {
         }
     }, [jobCode, area, state, selectedState])
     
-    // Show loading state
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
