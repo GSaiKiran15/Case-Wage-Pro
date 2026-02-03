@@ -8,6 +8,9 @@ type JobData = {
     jobDescription: string;
     jobCode: string
     areaCode: string
+    pay: number;
+    isRemote: boolean;
+    level: number;
 }
 
 type JobContextType = {
@@ -24,7 +27,10 @@ export function JobProvider({children}:{children: ReactNode}) {
         area: '',
         jobDescription: '',
         jobCode: '',
-        areaCode: ''
+        areaCode: '',
+        pay: 0,
+        isRemote: false,
+        level: 1
     })
 
     return(

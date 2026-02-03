@@ -3,9 +3,9 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { GoogleGenAI } from "@google/genai";
 
 export async function getRecommendation(params: any) {
-    const { jobDescription, occupation, state, area } = params;
+    const { jobDescription, occupation, state, area, pay } = params;
     const pineConeResults = await queryPineCone(jobDescription);
-    const geminiResults = await queryGemini(jobDescription, pineConeResults);
+    const geminiResults = await queryGemini(jobDescription, pineConeResults, occupation, state, area, pay);
     
     return geminiResults;
 }
@@ -30,25 +30,23 @@ export async function queryPineCone(jobDescription: string) {
         fields: ['description', 'title', 'value'], 
     });
 
-    // console.log("Pinecone Results:", JSON.stringify(results, null, 2));
-
     return {
         success: true,
         data: results
     };
 }
 
-export async function queryGemini(jobDescription: string, pineconeResults: any) {
+export async function queryGemini(jobDescription: string, pineconeResults: any, occupation:any, state:any, area:any, pay:number) {
     if (!process.env.GEMINI_API_KEY) {
         throw new Error("Missing GEMINI_API_KEY in environment variables");
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
-    const prompt = `You are a strict filter for Pinecone similarity-search results.
+    const prompt = `You are a strict filter for Pinecone similarity-search results AND a U.S. H-1B prevailing wage level classifier.
 
 INPUTS:
-1) USER_JD: a plain-text job description the user provided.
+1) USER_JD: plain-text job description.
 2) PINECONE_RESULTS: JSON shaped like:
 {
   "result": {
@@ -58,8 +56,11 @@ INPUTS:
     ]
   }
 }
+3) PAY (optional): string (e.g., "$40/hour" or "$120,000/year" or "unknown")
+4) WORK_LOCATION (optional): string (e.g., "Denver, CO, US" or "unknown")
+5) ROLE_TYPE (optional): string (e.g., "IC", "lead", "manager", "unknown")
 
-TASK:
+TASK 1 — FILTER (STRICT):
 Return ONLY the subset of hits that are truly eligible/compatible with USER_JD.
 
 STRICT RULES:
@@ -72,15 +73,21 @@ STRICT RULES:
 - Preserve original order among kept hits (same order as in input).
 - Do not rename keys, do not change number formats, do not add or remove any fields inside a kept hit object.
 
+TASK 2 — WAGE LEVEL (STRICT, JD-ONLY):
+Determine the MOST DEFENSIBLE DOL/USCIS prevailing wage level (1–4) based ONLY on USER_JD signals:
+- duties complexity, autonomy, supervision, decision-making, ambiguity, leadership, and required experience/education.
+- Be conservative: do NOT choose a higher level unless clearly supported.
+- PAY and WORK_LOCATION must NOT affect the level choice (optional sanity check only).
+
 OUTPUT REQUIREMENTS (NO EXCEPTIONS):
-- Output ONLY valid JSON. No preamble, no markdown, no extra keys, no explanations.
-- Output MUST be the same shape as Pinecone results, but filtered:
+- Output ONLY valid JSON. No markdown. No explanations.
+- Output MUST be exactly this shape and keys (no extras):
 {
-  "result": {
-    "hits": [ <filtered hit objects exactly as provided> ]
-  }
+  "result": { "hits": [ <filtered hit objects exactly as provided> ] },
+  "defensible_wage_level": "1" | "2" | "3" | "4",
+  "confidence": "low" | "medium" | "high"
 }
-- If no hits match, return {"result":{"hits":[]}} exactly.
+- If no hits match, return hits as [].
 
 Now process the inputs below.
 
@@ -92,6 +99,21 @@ ${jobDescription}
 PINECONE_RESULTS:
 <<<
 ${JSON.stringify(pineconeResults, null, 2)}
+>>>
+
+PAY (optional):
+<<<
+${pay}
+>>>
+
+WORK_LOCATION (optional):
+<<<
+${area}
+>>>
+
+ROLE_TYPE (optional):
+<<<
+${occupation}
 >>>
 `;
 

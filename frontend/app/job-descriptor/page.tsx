@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useJob } from "@/contexts/JobContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import FocusButton  from "@/components/focus-button";
 import { DotWave } from "@/components/ui/dot-wave";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { queryGeminiJD } from "./action";
+import { MapPin } from "lucide-react";
+import { optimizeJobDescription } from "./action";
 import Geography from '@/data/geography.json';
 
 const US_STATES = Object.keys(Geography).sort();
@@ -17,36 +19,9 @@ export default function JobDescriptorPage() {
     const [error, setError] = useState<string | null>(null)
     const router = useRouter();
     const { jobData } = useJob();
-    const {jobCode, area, state} = jobData    
+    const {jobCode, area, state, occupation, jobDescription, isRemote, pay} = jobData    
     const [selectedState, setSelectedState] = useState<string>('');
-    const [analysisResult, setAnalysisResult] = useState<string>('');
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-    const handleAnalyze = useCallback(async () => {
-        setIsAnalyzing(true);
-        try {
-            const result = await queryGeminiJD(
-                jobData.jobDescription || "No description provided",
-                "unknown", 
-                `${area}, ${state}`,
-                jobData.occupation
-            );
-            if (result.success) {
-                console.log(result);
-                setAnalysisResult(result.filteredResults || '');
-            }
-        } catch (error) {
-            console.error("Analysis failed:", error);
-        } finally {
-            setIsAnalyzing(false);
-        }
-    }, [jobData, area, state]);
-
-    useEffect(() => {
-        if (jobData?.jobDescription && !analysisResult) {
-            handleAnalyze();
-        }
-    }, [handleAnalyze, jobData?.jobDescription, analysisResult]);
+    const [isOptimizing, setIsOptimizing] = useState(false);
 
     // Initialize selectedState when jobData.state is available
     useEffect(() => {
@@ -119,6 +94,37 @@ export default function JobDescriptorPage() {
         { level: "Average", wage: jobInfo.average, description: "Mean wage across all levels" },
     ];
 
+    const handleOptimizeJD = async () => {
+        setIsOptimizing(true);
+        try {
+            const result = await optimizeJobDescription(
+                jobDescription || "No job description provided",
+                occupation,
+                {
+                    location: `${area}, ${state}`,
+                    isRemote: isRemote,
+                    pay: pay,
+                    state: state,
+                    area: area,
+                }
+            );
+
+            if (result.success) {
+                // Store optimized JD in localStorage
+                localStorage.setItem('optimizedJD', result.optimizedJD);
+                localStorage.setItem('targetRole', result.targetRole);
+                
+                // Navigate to viewer page
+                router.push('/updated-jd-viewer');
+            }
+        } catch (error) {
+            console.error("Optimization failed:", error);
+            alert("Failed to optimize job description. Please try again.");
+        } finally {
+            setIsOptimizing(false);
+        }
+    };
+
     return (
         <DotWave
             dotGap={20}
@@ -139,15 +145,32 @@ export default function JobDescriptorPage() {
                 {/* Header Card */}
                 <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl">
                     <CardHeader>
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-center justify-between">
                             <div className="space-y-2">
                                 <CardTitle className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-400">
                                     {jobInfo.title}
                                 </CardTitle>
-                                <CardDescription className="text-neutral-400 text-sm">
-                                    SOC Code: {jobCode} • Location: {area}, {state}
-                                </CardDescription>
+                                <div className="space-y-2">
+                                    <div className="text-base font-bold text-white">
+                                        {occupation}
+                                    </div>
+                                    <div className="text-xs text-neutral-500 font-mono">
+                                        {jobCode}
+                                    </div>
+                                    <div className="text-sm font-semibold text-neutral-300 flex items-center gap-1">
+                                        <MapPin className="h-3.5 w-3.5 animate-bounce" />
+                                        {area}, {state}
+                                    </div>
+                                </div>
                             </div>
+                            <FocusButton
+                                onClick={handleOptimizeJD}
+                                disabled={isOptimizing}
+                                className="self-center bg-transparent text-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                dashColor="#06b6d4"
+                            >
+                                {isOptimizing ? "Optimizing..." : "Optimize JD for this role"}
+                            </FocusButton>
                         </div>
                     </CardHeader>
                     <CardContent>

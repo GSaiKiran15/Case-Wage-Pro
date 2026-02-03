@@ -1,75 +1,117 @@
 "use server";
 import { GoogleGenAI } from "@google/genai";
 
-export async function queryGeminiJD(jobDescription: string, pay: string, city: string, jobName: string) {
+interface OptionalConstraints {
+    location?: string;
+    isRemote?: boolean;
+    pay?: number;
+    state?: string;
+    area?: string;
+    maxSeniority?: "junior" | "mid" | "senior" | "unchanged";
+    formatHint?: "mirror" | "compact" | "expanded";
+    mustKeepPhrases?: string[];
+    mustNotAdd?: string[];
+    keywordsToEmphasize?: string[];
+    keywordsToDeemphasize?: string[];
+}
+
+export async function optimizeJobDescription(
+    currentJD: string,
+    targetRole: string,
+    constraints?: OptionalConstraints
+) {
     if (!process.env.GEMINI_API_KEY) {
         throw new Error("Missing GEMINI_API_KEY in environment variables");
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
-    const prompt = `You are a U.S. H-1B compliance analyst. Determine the MOST DEFENSIBLE DOL/USCIS prevailing wage level (1–4) for the job described. Be conservative: do NOT choose a higher level unless clearly supported by job requirements and duties. Pay and location affect wage AMOUNT, but wage LEVEL must be justified by duties, complexity, autonomy, and requirements.
+
+    // Build constraints object with available data
+    const finalConstraints: OptionalConstraints = {
+        maxSeniority: "unchanged",
+        formatHint: "mirror",
+        ...constraints,
+    };
+
+    const prompt = `You are a job-description rewriter with strict truthfulness constraints.
+
+GOAL:
+Given a CURRENT_JD (what the job truly is today) and a TARGET_ROLE (what the user wants),
+produce a NEW_JD that stays faithful to CURRENT_JD but is tilted toward TARGET_ROLE by:
+- emphasizing overlapping responsibilities,
+- reordering bullets to highlight TARGET_ROLE-relevant work,
+- adjusting wording to match TARGET_ROLE language,
+- adding ONLY minor adjacent tasks that are already implied by CURRENT_JD.
+Do NOT invent new core duties, new teams, new products, or new seniority/authority.
+
+YOU MUST FIRST "LEARN" BOTH ROLES:
+- Infer the role families, typical responsibilities, and skills for CURRENT_ROLE and TARGET_ROLE.
+- Use this learned understanding ONLY to reframe and re-emphasize what already exists in CURRENT_JD.
+- If TARGET_ROLE requires responsibilities not supported by CURRENT_JD, do NOT add them.
+  Instead, softly reposition existing items, or add a small "Nice to have" that is clearly adjacent.
+
+STRICT CONSTRAINTS:
+1) Preserve truth: NEW_JD must remain compatible with CURRENT_JD.
+   - No false leadership claims (no "lead/own strategy/architect org-wide" unless CURRENT_JD supports it).
+   - No false experience requirements (don't increase years/degree).
+2) Keep the same seniority band as CURRENT_JD unless the input explicitly allows change.
+3) Keep the same broad domain unless CURRENT_JD already covers the target domain.
+4) Maintain a similar format and section headers as CURRENT_JD (mirror structure).
+5) Tech stack:
+   - Keep existing tech in CURRENT_JD.
+   - You may add a tech keyword ONLY if CURRENT_JD strongly implies it (e.g., "REST APIs" implies HTTP/JSON).
+6) Content shifts allowed (ONLY these):
+   - reorder responsibilities
+   - rewrite bullet wording
+   - adjust job title slightly (e.g., "Software Engineer" → "Full-Stack Software Engineer") ONLY if supported
+   - add up to 3 "Nice to have" bullets that are adjacent/implied, not new core duties
+7) Output must be ONLY the NEW_JD text. No analysis, no commentary, no markdown.
+8) NEVER INCLUDE PAY OR ANNUAL PAY NEVER!
 
 INPUTS:
-- Job Description (JD): ${jobDescription}
-- Pay rate: ${pay}   (e.g., "$40/hour" or "$120,000/year"; if unknown say "unknown")
-- Work location: ${city} (city, state, country; if fully remote, where the employee will physically work most days)
-- Role type (if known): ${jobName}(IC/lead/architect/manager or "unknown")
+- CURRENT_JD: the original job description text (verbatim)
+- TARGET_ROLE: the role the user wants (title + 1–2 lines describing desired focus)
+- OPTIONAL_CONSTRAINTS: JSON (may be empty) with:
+  {
+    "must_keep_phrases": [ ... ],     // exact phrases that must appear in NEW_JD
+    "must_not_add": [ ... ],          // forbidden duties/claims (e.g., "people management", "security clearance")
+    "max_seniority": "junior|mid|senior|unchanged",
+    "format_hint": "mirror|compact|expanded",
+    "keywords_to_emphasize": [ ... ], // only if already supported by CURRENT_JD
+    "keywords_to_deemphasize": [ ... ],
+    "location": "${finalConstraints.location || 'not specified'}",
+    "is_remote": ${finalConstraints.isRemote || false},
+    "annual_pay": "${finalConstraints.pay || 'not specified'}"
+  }
 
-TASK (do in this order):
-1) Extract from the JD:
-   - job title
-   - required education (minimum)
-   - required years of experience (minimum; if not stated, say "not specified")
-   - autonomy/supervision cues (keywords/phrases)
-   - leadership/mentoring expectations (yes/no + evidence)
-   - duty complexity cues (architecture vs implementation, ambiguity, decision-making)
-   - impact scope (task/feature/product/org) with evidence
-2) Based ONLY on the JD-derived signals (not pay), determine the defensible wage level or range (e.g., 1–2, 2–3).
-3) Use pay + location ONLY as a sanity check:
-   - if pay is below typical prevailing wage for your recommended level(s), flag "compensation risk"
-   - do NOT change level upward solely because pay is high
-4) Provide an RFE risk rating (Low/Medium/High) and list the exact JD gaps causing risk.
+NOW PRODUCE NEW_JD.
 
-OUTPUT (STRICT FORMAT):
-A) Extracted Signals (with direct JD evidence snippets, max 15 words each):
-- Title:
-- Education required:
-- Experience required:
-- Autonomy/supervision evidence:
-- Leadership/mentoring evidence:
-- Complexity/decision-making evidence:
-- Impact scope evidence:
+CURRENT_JD:
+<<<
+${currentJD}
+>>>
 
-B) Wage Level Assessment:
-- Defensible level(s): Level X or Level X–Y
-- Why these level(s) fit (bullets)
+TARGET_ROLE:
+<<<
+${targetRole}
+>>>
 
-C) Risk Analysis:
-- RFE Risk: Low / Medium / High
-- Risk factors (bullets)
-- JD improvements to better support the recommended level (bullets)
-
-D) Pay/Location Check (do not adjust level upward from pay):
-- Pay adequacy flags (if any)
-- Location assumptions (if any)
-
-IMPORTANT OUTPUT REQUIREMENT:
-Return ONLY a single JSON object with exactly these keys:
-- "defensible_wage_level": string (allowed values: "1", "2", "3", "4")
-- "confidence": string (allowed values: "low", "medium", "high")
-Do not include any other keys. Do not include explanations. Do not include markdown.
-`
+OPTIONAL_CONSTRAINTS:
+<<<
+${JSON.stringify(finalConstraints, null, 2)}
+>>>
+`;
 
     const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [{ text: prompt }],
     });
 
-    console.log("Gemini Response:\n", response.text);
+    console.log("Gemini JD Optimization Response:\n", response.text);
 
     return {
         success: true,
-        filteredResults: response.text
+        optimizedJD: response.text,
+        targetRole: targetRole,
     };
 }

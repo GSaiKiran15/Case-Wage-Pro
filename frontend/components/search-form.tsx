@@ -60,6 +60,9 @@ export function SearchForm({ className }: { className?: string }) {
   const [stateSearchQuery, setStateSearchQuery] = useState("")
   const [areaSearchQuery, setAreaSearchQuery] = useState("")
   const [jobDescription, setJobDescription] = useState("")
+  const [pay, setPay] = useState<number>(0)
+  const [isRemote, setIsRemote] = useState<boolean>(false)
+  const [level, setLevel] = useState<number>(0)
   const [loading, setLoading] = useState(false)
   const router = useRouter() 
   const { jobData, setJobData } = useJob()
@@ -89,9 +92,30 @@ export function SearchForm({ className }: { className?: string }) {
     setAreaSearchQuery("")
     setAreaSearchQuery("")
     setOccupationCode("")
+    setPay(0)
+    setIsRemote(false)
+    setLevel(0)
   }
 
   const handleAnalyze = async () => {
+    // Validate required fields
+    if (!occupationValue) {
+      alert('Please select an occupation');
+      return;
+    }
+    if (!stateValue) {
+      alert('Please select a state');
+      return;
+    }
+    if (!areaValue) {
+      alert('Please select an area');
+      return;
+    }
+    if (!jobDescription.trim()) {
+      alert('Please enter a job description');
+      return;
+    }
+
     setLoading(true);
      const mappingKey = `${areaValue}, ${stateValue}`;
   const foundMapping = (wageData as Record<string, any>)[mappingKey];
@@ -108,15 +132,33 @@ export function SearchForm({ className }: { className?: string }) {
         jobDescription: jobDescription,
         occupation: occupationValue,
         state: stateValue,
-        area: areaValue
+        area: areaValue,
+        pay: pay
       });
+
+      // Parse the Gemini response to extract defensible_wage_level
+      let extractedLevel = 1; // Default to level 1
+      try {
+        if (result.filteredResults) {
+          const geminiResponse = JSON.parse(result.filteredResults);
+          extractedLevel = parseInt(geminiResponse.defensible_wage_level) || 1;
+        }
+      } catch (parseError) {
+        console.warn("Could not parse wage level from Gemini response, using default level 1");
+      }
+
+      setLevel(extractedLevel); // Update state
+
       setJobData({
         occupation: occupationValue,
         state: stateValue,
         area: areaValue,
         jobDescription: jobDescription,
         jobCode: occupationCode,
-        areaCode: areaCode
+        areaCode: areaCode,
+        pay: pay,
+        isRemote: isRemote,
+        level: extractedLevel // Use the extracted level
       })
       localStorage.setItem('analysisResults', JSON.stringify(result))
       console.log(jobData)
@@ -344,7 +386,52 @@ export function SearchForm({ className }: { className?: string }) {
                  className="min-h-[200px] text-base bg-neutral-950/50 border-neutral-800 text-white placeholder:text-neutral-500 resize-none focus-visible:ring-offset-0" 
                  value={jobDescription}
                  onChange={(e) => setJobDescription(e.target.value)}
+                 required
                />
+            </div>
+
+            {/* Pay and Remote Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Annual Salary */}
+              <div className="space-y-2">
+                <Label htmlFor="salary" className="text-sm font-medium text-neutral-200">Annual Salary ($) (optional)</Label>
+                <input
+                  id="salary"
+                  type="number"
+                  value={pay || ''}
+                  onChange={(e) => setPay(Number(e.target.value))}
+                  placeholder="Enter annual salary"
+                  className="w-full h-11 px-4 text-base bg-neutral-950/50 border border-neutral-800 rounded-md text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-700 focus:border-transparent"
+                />
+              </div>
+
+              {/* Remote Position */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-neutral-200">Remote Position?</Label>
+                <div className="flex gap-6 h-11 items-center">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="remote"
+                      checked={isRemote === true}
+                      onChange={() => setIsRemote(true)}
+                      className="w-4 h-4 accent-cyan-400"
+                      required
+                    />
+                    <span className="text-neutral-400 group-hover:text-white transition-colors">Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="remote"
+                      checked={isRemote === false}
+                      onChange={() => setIsRemote(false)}
+                      className="w-4 h-4 accent-cyan-400"
+                    />
+                    <span className="text-neutral-400 group-hover:text-white transition-colors">No</span>
+                  </label>
+                </div>
+              </div>
             </div>
 
           </div>
