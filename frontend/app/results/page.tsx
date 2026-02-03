@@ -207,7 +207,7 @@ function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
     const router = useRouter();
     const [isRemote, setIsRemote] = useState<boolean>(false);
     const [salary, setSalary] = useState<number>(0);
-    const { jobData, setJobData } = useJob();  // Get data and setter from context
+    const { jobData, setJobData } = useJob();
 
     const handleSubmit = () => {
         console.log('🚀 handleSubmit called!');
@@ -216,14 +216,13 @@ function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
         console.log('📤 Submission data:', { 
             job: job.fields.title, 
             socCode: job.fields.value,
-            isRemote, 
+            isRemote,
             salary,
         });
         
-        // Update jobData with the selected job's SOC code
         setJobData({
             ...jobData,
-            jobCode: job.fields.value,  // Store SOC code for job-descriptor page
+            jobCode: job.fields.value,  
             occupation: job.fields.title
         });
         

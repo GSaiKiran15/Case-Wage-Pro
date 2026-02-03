@@ -118,7 +118,6 @@ export function SearchForm({ className }: { className?: string }) {
         jobCode: occupationCode,
         areaCode: areaCode
       })
-      // console.log("Client: Server replied:", result);
       localStorage.setItem('analysisResults', JSON.stringify(result))
       console.log(jobData)
       router.push('/results')
@@ -129,7 +128,6 @@ export function SearchForm({ className }: { className?: string }) {
     }
   }
 
-  // Loading State Card
   if (loading) {
     return (
       <Card className={cn("bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl h-[500px] w-full flex items-center justify-center", className)}>

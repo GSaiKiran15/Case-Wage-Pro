@@ -6,7 +6,6 @@ import { useJob } from "@/contexts/JobContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DotWave } from "@/components/ui/dot-wave";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { queryGeminiJD } from "./action";
 import Geography from '@/data/geography.json';
 
@@ -134,15 +133,15 @@ export default function JobDescriptorPage() {
             rippleWidth={80}
             rippleIntensity={0.7}
             staticCenter={true}
-            className="min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center p-6"
+            className="min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center p-4 md:p-6"
         >
-            <div className="w-full max-w-5xl z-10 space-y-6">
+            <div className="w-full max-w-5xl z-10 space-y-4 md:space-y-6">
                 {/* Header Card */}
                 <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl">
                     <CardHeader>
                         <div className="flex items-start justify-between">
                             <div className="space-y-2">
-                                <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-400">
+                                <CardTitle className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-100 to-neutral-400">
                                     {jobInfo.title}
                                 </CardTitle>
                                 <CardDescription className="text-neutral-400 text-sm">
@@ -161,7 +160,7 @@ export default function JobDescriptorPage() {
                 {/* Wage Data Table Card */}
                 <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl overflow-hidden">
                     <CardHeader>
-                        <CardTitle className="text-2xl font-semibold text-white">
+                        <CardTitle className="text-xl md:text-2xl font-semibold text-white">
                             Prevailing Wage Data
                         </CardTitle>
                         <CardDescription className="text-neutral-400">
@@ -173,17 +172,17 @@ export default function JobDescriptorPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-neutral-800 bg-neutral-950/50">
-                                        <th className="text-left px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">
-                                            Wage Level
+                                        <th className="text-left px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">
+                                            Level
                                         </th>
-                                        <th className="text-left px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">
+                                        <th className="text-left px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider hidden md:table-cell">
                                             Description
                                         </th>
-                                        <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">
-                                            Hourly Rate
+                                        <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">
+                                            Hourly
                                         </th>
-                                        <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">
-                                            Annual (est.)
+                                        <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">
+                                            Annual
                                         </th>
                                     </tr>
                                 </thead>
@@ -193,20 +192,20 @@ export default function JobDescriptorPage() {
                                             key={index}
                                             className="border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30"
                                         >
-                                            <td className="px-6 py-4">
-                                                <span className="font-medium text-white">
+                                            <td className="px-3 py-2 md:px-6 md:py-4">
+                                                <span className="font-medium text-white text-sm md:text-base">
                                                     {item.level}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-neutral-400 text-sm">
+                                            <td className="px-3 py-2 md:px-6 md:py-4 text-neutral-400 text-xs md:text-sm hidden md:table-cell">
                                                 {item.description}
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className="text-lg font-semibold text-white">
+                                            <td className="px-3 py-2 md:px-6 md:py-4 text-right">
+                                                <span className="text-base md:text-lg font-semibold text-white">
                                                     ${parseFloat(item.wage).toFixed(2)}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-neutral-400">
+                                            <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-400 text-xs md:text-sm">
                                                 ${(parseFloat(item.wage) * 2080).toLocaleString('en-US', { 
                                                     minimumFractionDigits: 0,
                                                     maximumFractionDigits: 0 
@@ -224,9 +223,9 @@ export default function JobDescriptorPage() {
                 {wageInfo.stateAreas && wageInfo.stateAreas.length > 0 && (
                     <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl overflow-hidden">
                         <CardHeader>
-                            <CardTitle className="text-2xl font-semibold text-white flex items-center justify-between gap-4">
+                            <CardTitle className="text-xl md:text-2xl font-semibold text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-4">
                                 <span>Top Areas in {selectedState || state}</span>
-                                <div className="z-50 w-[200px]">
+                                <div className="z-50 w-full md:w-[200px]">
                                     <Select 
                                         value={selectedState} 
                                         onValueChange={(value) => setSelectedState(value)}
@@ -253,23 +252,23 @@ export default function JobDescriptorPage() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-neutral-800 bg-neutral-950/50">
-                                            <th className="text-left px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Area</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 1</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 2</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 3</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 4</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Mean</th>
+                                            <th className="text-left px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">Area</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L1</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L2</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L3</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L4</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">Mean</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {wageInfo.stateAreas.map((area: any, index: number) => (
                                             <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800/30 transition-colors">
-                                                <td className="px-6 py-4 text-white font-medium">{area.areaName}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level1).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level2).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level3).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level4).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-400">${parseFloat(area.average).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-white font-medium text-xs md:text-sm">{area.areaName}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level1).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level2).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level3).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level4).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-400 text-xs md:text-sm">${parseFloat(area.average).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -283,7 +282,7 @@ export default function JobDescriptorPage() {
                 {wageInfo.usaAreas && wageInfo.usaAreas.length > 0 && (
                     <Card className="bg-neutral-900/50 backdrop-blur-xl border-neutral-800 shadow-2xl overflow-hidden">
                         <CardHeader>
-                            <CardTitle className="text-2xl font-semibold text-white">
+                            <CardTitle className="text-xl md:text-2xl font-semibold text-white">
                                 Top Areas in USA
                             </CardTitle>
                             <CardDescription className="text-neutral-400">
@@ -295,23 +294,23 @@ export default function JobDescriptorPage() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-neutral-800 bg-neutral-950/50">
-                                            <th className="text-left px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Area</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 1</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 2</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 3</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Level 4</th>
-                                            <th className="text-right px-6 py-4 text-sm font-semibold text-neutral-300 uppercase tracking-wider">Mean</th>
+                                            <th className="text-left px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">Area</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L1</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L2</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L3</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">L4</th>
+                                            <th className="text-right px-3 py-2 md:px-6 md:py-4 text-xs md:text-sm font-semibold text-neutral-300 uppercase tracking-wider">Mean</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {wageInfo.usaAreas.map((area: any, index: number) => (
                                             <tr key={index} className="border-b border-neutral-800/50 hover:bg-neutral-800/30 transition-colors">
-                                                <td className="px-6 py-4 text-white font-medium">{area.areaName}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level1).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level2).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level3).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-300">${parseFloat(area.level4).toFixed(2)}</td>
-                                                <td className="px-6 py-4 text-right text-neutral-400">${parseFloat(area.average).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-white font-medium text-xs md:text-sm">{area.areaName}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level1).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level2).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level3).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-300 text-xs md:text-sm">${parseFloat(area.level4).toFixed(2)}</td>
+                                                <td className="px-3 py-2 md:px-6 md:py-4 text-right text-neutral-400 text-xs md:text-sm">${parseFloat(area.average).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
