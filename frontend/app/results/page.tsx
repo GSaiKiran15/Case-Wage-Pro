@@ -6,7 +6,6 @@ import { Card } from "@/components/ui/card";
 import TextGradient from "@/components/text-gradient";
 import { Meteors } from "@/components/ui/meteors";
 import { useJob } from "@/contexts/JobContext";
-import levelsData from "@/data/levels.json";
 
 type JobResult = {
   _id: string;
@@ -205,32 +204,20 @@ function JobCard({ job, index, onClick }: { job: JobResult; index: number; onCli
 
 function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
     const router = useRouter();
-    const [isRemote, setIsRemote] = useState<boolean>(false);
-    const [salary, setSalary] = useState<number>(0);
-    const { jobData, setJobData } = useJob();  // Get data and setter from context
+    const { jobData, setJobData } = useJob();
 
     const handleSubmit = () => {
         console.log('🚀 handleSubmit called!');
         console.log('jobData:', jobData);
         console.log('Selected job:', job.fields);
-        console.log('📤 Submission data:', { 
-            job: job.fields.title, 
-            socCode: job.fields.value,
-            isRemote, 
-            salary,
-        });
         
-        // Update jobData with the selected job's SOC code
         setJobData({
             ...jobData,
-            jobCode: job.fields.value,  // Store SOC code for job-descriptor page
+            jobCode: job.fields.value,  
             occupation: job.fields.title
         });
         
-        // Close modal first
         onClose();
-        
-        // Navigate to job descriptor page
         router.push('/job-descriptor');
     };
 
@@ -267,49 +254,9 @@ function PopUpCard({ job, onClose }: { job: JobResult; onClose: () => void }) {
                         <p className="text-sm text-neutral-500 font-mono">
                             Code: {job.fields.value}
                         </p>
-                    </div>
-
-                    {/* Remote Question */}
-                    <div className="mb-6">
-                        <label className="block text-neutral-300 font-medium mb-3">
-                            Is this position remote?
-                        </label>
-                        <div className="flex gap-6">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input 
-                                    type="radio" 
-                                    name="remote"
-                                    checked={isRemote === true}
-                                    onChange={() => setIsRemote(true)}
-                                    className="w-4 h-4 accent-cyan-400"
-                                />
-                                <span className="text-neutral-400 group-hover:text-white transition-colors">Yes</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input 
-                                    type="radio" 
-                                    name="remote"
-                                    checked={isRemote === false}
-                                    onChange={() => setIsRemote(false)}
-                                    className="w-4 h-4 accent-cyan-400"
-                                />
-                                <span className="text-neutral-400 group-hover:text-white transition-colors">No</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Salary Input */}
-                    <div className="mb-8">
-                        <label className="block text-neutral-300 font-medium mb-3">
-                            Annual Salary ($)
-                        </label>
-                        <input 
-                            type="number"
-                            value={salary || ''}
-                            onChange={(e) => setSalary(Number(e.target.value))}
-                            placeholder="Enter your salary"
-                            className="w-full bg-neutral-800/50 border border-neutral-700 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                        />
+                        <p className="text-sm text-neutral-400 mt-3">
+                            Continue to view detailed wage data and analysis for this occupation.
+                        </p>
                     </div>
 
                     {/* Buttons */}
