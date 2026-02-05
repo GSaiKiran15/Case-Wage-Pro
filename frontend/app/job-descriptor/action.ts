@@ -111,7 +111,7 @@ ${JSON.stringify(finalConstraints, null, 2)}
 
     return {
         success: true,
-        optimizedJD: response.text,
+        optimizedJD: response.text ?? "Job description optimization failed - no response generated.",
         targetRole: targetRole,
     };
 }

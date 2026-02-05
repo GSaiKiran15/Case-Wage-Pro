@@ -164,7 +164,7 @@ ${occupation}
 
     return {
         success: true,
-        filteredResults: response.text
+        filteredResults: response.text ?? ""
     };
 }
 

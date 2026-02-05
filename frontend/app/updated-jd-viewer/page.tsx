@@ -62,13 +62,11 @@ export default function UpdatedJDViewerPage() {
     return (
         <DotWave
             dotColor="#525252"
-            backgroundColor="#0a0a0a"
-            dotSize={3}
-            spacing={25}
-            waveAmplitude={30}
-            waveFrequency={0.02}
-            waveSpeed={0.5}
-            rippleSize={200}
+            bgColor="#0a0a0a"
+            dotRadiusMax={3}
+            dotGap={25}
+            lightIntensity={0.02}
+            fadeIntensity={0.08}
             rippleWidth={80}
             rippleIntensity={0.7}
             staticCenter={true}
